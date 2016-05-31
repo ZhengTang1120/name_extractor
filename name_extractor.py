@@ -4,15 +4,9 @@ import re
 from pyspark import SparkContext
 
 def name_extractor(page, t):
-    if "name" in page:
-        name = page["name"]
-    else:
-        name = ""
-    if "description" in page:
-        description = page["description"]
-    else:
-        description = ""    
-    text = name[0]+" "+description
+    name = page["name"]
+    description = page["description"] 
+    text = name+" "+description
 
     tokens = text.lower().split(" ")
     temp = set()
@@ -22,7 +16,7 @@ def name_extractor(page, t):
             value = t.value.get(token.group(0))
             if isinstance(value, basestring):
                 temp.add(value)
-    return dict(id=page["id"],names=list(temp))
+    return dict(id = page["id"], extracted = list(temp), name = name, description = description)
 
 def get_value_json(path, doc, separator='.'):
     paths = path.strip().split(separator)
@@ -32,7 +26,7 @@ def get_value_json(path, doc, separator='.'):
         else:
             return ''
 
-    if type(doc) == dict or type(doc) == list:
+    if type(doc) == dict:
         return json.dumps(doc)
     else:
         return doc
@@ -55,7 +49,11 @@ def create_input_geonames(line):
         for x in json_l:
             # print x
             out['id'] = fo = get_value_json('_id', line)
-            out['name'] = get_value_json('name', x)
+            name = get_value_json('name', x)
+            if len(name) == 0:
+                out['name'] = ""
+            else:
+                out['name'] = name[0]
             out['description'] = get_value_json('description', x)
 
     return out
